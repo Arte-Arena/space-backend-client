@@ -1,7 +1,3 @@
-# Space Backend Client
-
-API de backend para gerenciamento de serviços relacionados ao projeto "space-backend-client".
-
 ## Índice
 
 - [Estrutura do Projeto](#estrutura-do-projeto)
