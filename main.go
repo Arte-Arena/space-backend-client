@@ -21,8 +21,10 @@ func setupRouter() http.Handler {
 }
 
 func main() {
+	utils.LoadEnvVariables()
+
 	config := utils.Config{
-		Port:         "8080",
+		Port:         os.Getenv(utils.ENV_PORT),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
