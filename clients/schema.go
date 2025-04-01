@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-type ClientSchema struct {
+type ToMongoInsert struct {
 	ID                      bson.ObjectID   `bson:"_id"`                                 // Obrigatório
 	PersonType              string          `bson:"person_type"`                         // Obrigatório - 'J' for Legal entity or 'F' for Individual
 	Name                    string          `bson:"name"`                                // Obrigatório
