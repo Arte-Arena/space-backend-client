@@ -21,14 +21,14 @@ type ClientsFromMongoDBFindOne struct {
 }
 
 type ClientsRequestToCreateOne struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Name     string `bson:"name"`
+	Email    string `bson:"email"`
+	Password string `bson:"password"`
 }
 
 type ClientsToCreateOne struct {
-	Contact      ContactToCreateOne `json:"contact"`
-	PasswordHash string             `json:"passwordHash"`
+	Contact      ContactToCreateOne `bson:"contact"`
+	PasswordHash string             `bson:"passwordHash"`
 }
 
 type ContactToCreateOne struct {
