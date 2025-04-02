@@ -15,27 +15,75 @@ const (
 
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("access_token")
+		accessCookie, err := r.Cookie("access_token")
+		if err == nil {
+			claims, err := utils.ValidateAccessKey(accessCookie.Value)
+			if err == nil {
+				ctx := context.WithValue(r.Context(), UserIDKey, claims.UserId)
+				r = r.WithContext(ctx)
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		refreshCookie, err := r.Cookie("refresh_token")
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(utils.ApiResponse{
-				Message: "Token de acesso não encontrado",
+				Message: "Tokens de autenticação não encontrados",
 			})
 			return
 		}
 
-		claims, err := utils.ValidateAccessKey(cookie.Value)
+		refreshClaims, err := utils.ValidateRefreshKey(refreshCookie.Value)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(utils.ApiResponse{
-				Message: "Token inválido ou expirado",
+				Message: "Refresh token inválido ou expirado",
 			})
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, claims.UserId)
+		newAccessToken, err := utils.GenerateAccessKey(refreshClaims.UserId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(utils.ApiResponse{
+				Message: "Erro ao gerar novo token de acesso",
+			})
+			return
+		}
+
+		newRefreshToken, err := utils.GenerateRefreshKey(refreshClaims.UserId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(utils.ApiResponse{
+				Message: "Erro ao gerar novo refresh token",
+			})
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "access_token",
+			Value:    newAccessToken,
+			Path:     "/",
+			MaxAge:   15 * 60,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    newRefreshToken,
+			Path:     "/",
+			MaxAge:   7 * 24 * 60 * 60,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
+		ctx := context.WithValue(r.Context(), UserIDKey, refreshClaims.UserId)
 		r = r.WithContext(ctx)
-
 		next.ServeHTTP(w, r)
 	}
 }
