@@ -104,14 +104,28 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := schemas.AuthResponseAfterSignin{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     "/",
+		MaxAge:   15 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		MaxAge:   7 * 24 * 60 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
 }
 
 func Signout(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +136,26 @@ func Signout(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -173,5 +207,58 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 		Data: map[string]string{
 			"userId": claims.UserId,
 		},
+	})
+}
+
+func RefreshToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(utils.ApiResponse{
+			Message: "Método não permitido",
+		})
+		return
+	}
+
+	refreshCookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(utils.ApiResponse{
+			Message: "Refresh token não encontrado",
+		})
+		return
+	}
+
+	claims, err := utils.ValidateRefreshKey(refreshCookie.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(utils.ApiResponse{
+			Message: "Refresh token inválido ou expirado",
+		})
+		return
+	}
+
+	newAccessToken, err := utils.GenerateAccessKey(claims.UserId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(utils.ApiResponse{
+			Message: "Erro ao gerar novo token de acesso",
+		})
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    newAccessToken,
+		Path:     "/",
+		MaxAge:   15 * 60,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(utils.ApiResponse{
+		Message: "Token atualizado com sucesso",
 	})
 }
