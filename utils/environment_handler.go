@@ -13,9 +13,11 @@ const (
 	ENV_MONGODB_URI      = "MONGODB_URI"
 	ACCESS_TOKEN_SECRET  = "ACCESS_TOKEN_SECRET"
 	REFRESH_TOKEN_SECRET = "REFRESH_TOKEN_SECRET"
+	TOKEN_ISSUER         = "TOKEN_ISSUER"
+	TOKEN_AUDIENCE       = "TOKEN_AUDIENCE"
 )
 
-var allowedKeys = [2]string{ENV_PORT, ENV_MONGODB_URI}
+var allowedKeys = [6]string{ENV_PORT, ENV_MONGODB_URI, ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, TOKEN_ISSUER, TOKEN_AUDIENCE}
 
 func LoadEnvVariables() {
 	workDir, err := os.Getwd()
@@ -38,6 +40,11 @@ func LoadEnvVariables() {
 
 	if fileInfo.Size() == 0 {
 		panic("[ENV] O arquivo .env está vazio")
+	}
+
+	foundKeys := make(map[string]bool)
+	for _, key := range allowedKeys {
+		foundKeys[key] = false
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -66,6 +73,7 @@ func LoadEnvVariables() {
 		for _, allowedKey := range allowedKeys {
 			if key == allowedKey {
 				isAllowed = true
+				foundKeys[key] = true
 				break
 			}
 		}
@@ -87,5 +95,17 @@ func LoadEnvVariables() {
 
 	if err := scanner.Err(); err != nil {
 		panic("[ENV] Erro ao ler o arquivo .env: " + err.Error())
+	}
+
+	var missingKeys []string
+	for key, found := range foundKeys {
+		if !found {
+			missingKeys = append(missingKeys, key)
+		}
+	}
+
+	if len(missingKeys) > 0 {
+		panic(fmt.Sprintf("[ENV] Variáveis de ambiente obrigatórias ausentes: %s",
+			strings.Join(missingKeys, ", ")))
 	}
 }
