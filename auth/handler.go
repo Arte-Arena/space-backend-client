@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func Signin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
@@ -31,7 +31,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.Password == "" {
+	if req.Email == "" || req.PasswordHash == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
 			Message: "Email e senha são obrigatórios",
@@ -75,7 +75,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if result.Password != req.Password {
+	if result.PasswordHash != req.PasswordHash {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
 			Message: "Credenciais inválidas",
@@ -111,7 +111,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func Logout(w http.ResponseWriter, r *http.Request) {
+func Signout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
@@ -171,4 +171,8 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 			"userId": claims.UserId,
 		},
 	})
+}
+
+func Signup(w http.ResponseWriter, r *http.Request) {
+
 }

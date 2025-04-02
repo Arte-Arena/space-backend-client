@@ -16,9 +16,9 @@ import (
 
 func setupRouter() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/auth/v1/token", auth.Login)
+	mux.HandleFunc("/auth/v1/signin", auth.Signin)
 	mux.HandleFunc("/auth/v1/authorize", auth.Authorize)
-	mux.HandleFunc("/auth/v1/logout", auth.Logout)
+	mux.HandleFunc("/auth/v1/signout", auth.Signout)
 
 	mux.HandleFunc("/v1/health", health.Handler)
 
