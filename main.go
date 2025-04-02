@@ -2,6 +2,7 @@ package main
 
 import (
 	"api/auth"
+	"api/clients"
 	"api/health"
 	"api/middlewares"
 	"api/utils"
@@ -20,7 +21,8 @@ func setupRouter() http.Handler {
 	mux.HandleFunc("/auth/v1/authorize", auth.Authorize)
 	mux.HandleFunc("/auth/v1/signout", auth.Signout)
 
-	mux.HandleFunc("/v1/health", health.Handler)
+	mux.HandleFunc("/v1/clients", clients.Handler)
+	mux.HandleFunc("/v1/uniforms", health.Handler)
 
 	handler := middlewares.Logging(middlewares.SecurityHeaders(middlewares.Cors(mux)))
 	return handler

@@ -14,7 +14,7 @@ type ClientsRequestToSignin struct {
 type ClientsRequestToSignout struct {
 }
 
-type ClientsFromMongoDBFindOneSignin struct {
+type ClientsFromMongoDBFindOne struct {
 	ID           bson.ObjectID      `bson:"_id"`
 	Contact      ContactToCreateOne `bson:"contact,omitempty"`
 	PasswordHash string             `bson:"passwordHash"`

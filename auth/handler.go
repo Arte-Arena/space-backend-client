@@ -2,6 +2,7 @@ package auth
 
 import (
 	"api/database"
+	"api/schemas"
 	"api/utils"
 	"context"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Signin(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +24,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := Request{}
+	req := schemas.ClientsRequestToSignin{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
@@ -31,7 +33,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.PasswordHash == "" {
+	if req.Email == "" || req.Password == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
 			Message: "Email e senha são obrigatórios",
@@ -55,9 +57,9 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	defer client.Disconnect(ctx)
 
 	collection := client.Database(database.MONGODB_DB_ADMIN).Collection("clients")
-	filter := bson.D{{Key: "email", Value: req.Email}}
+	filter := bson.D{{Key: "contact.email", Value: req.Email}}
 
-	result := FromMongoDBFind{}
+	result := schemas.ClientsFromMongoDBFindOne{}
 
 	err = collection.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
@@ -75,7 +77,8 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if result.PasswordHash != req.PasswordHash {
+	err = bcrypt.CompareHashAndPassword([]byte(result.PasswordHash), []byte(req.Password))
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
 			Message: "Credenciais inválidas",
@@ -83,7 +86,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := GenerateAccessKey(result.ID.Hex())
+	accessToken, err := utils.GenerateAccessKey(result.ID.Hex())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
@@ -92,7 +95,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := GenerateRefreshKey(result.ID.Hex())
+	refreshToken, err := utils.GenerateRefreshKey(result.ID.Hex())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
@@ -101,7 +104,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := Response{
+	response := schemas.AuthResponseAfterSignin{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
@@ -154,7 +157,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	}
 	tokenString := authHeader[7:]
 
-	claims, err := ValidateAccessKey(tokenString)
+	claims, err := utils.ValidateAccessKey(tokenString)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
@@ -171,8 +174,4 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 			"userId": claims.UserId,
 		},
 	})
-}
-
-func Signup(w http.ResponseWriter, r *http.Request) {
-
 }
