@@ -17,7 +17,7 @@ type ClientsRequestToSignout struct {
 type ClientsFromMongoDBFindOne struct {
 	ID           bson.ObjectID      `bson:"_id"`
 	Contact      ContactToCreateOne `bson:"contact,omitempty"`
-	PasswordHash string             `bson:"passwordHash"`
+	PasswordHash string             `bson:"password_hash"`
 }
 
 type ClientsRequestToCreateOne struct {
@@ -28,7 +28,9 @@ type ClientsRequestToCreateOne struct {
 
 type ClientsToCreateOne struct {
 	Contact      ContactToCreateOne `bson:"contact"`
-	PasswordHash string             `bson:"passwordHash"`
+	PasswordHash string             `bson:"password_hash"`
+	CreatedAt    time.Time          `bson:"created_at"`
+	UpdatedAt    time.Time          `bson:"updated_at"`
 }
 
 type ContactToCreateOne struct {

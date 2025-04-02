@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -51,12 +52,16 @@ func create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	contactToCreate := schemas.ContactToCreateOne{
-		Name:  clientFromRequest.Name,
-		Email: clientFromRequest.Email,
+		Name:      clientFromRequest.Name,
+		Email:     clientFromRequest.Email,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 	clientToCreate := schemas.ClientsToCreateOne{
 		Contact:      contactToCreate,
 		PasswordHash: string(hashedPassword),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
