@@ -17,12 +17,13 @@ import (
 
 func setupRouter() http.Handler {
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("/v1/auth/signin", auth.Signin)
 	mux.HandleFunc("/v1/auth/authorize", auth.Authorize)
 	mux.HandleFunc("/v1/auth/signout", auth.Signout)
 
-	mux.HandleFunc("/v1/clients", clients.Handler)
-	mux.HandleFunc("/v1/uniforms", health.Handler)
+	mux.HandleFunc("/v1/clients", middlewares.AuthMiddleware(clients.Handler))
+	mux.HandleFunc("/v1/uniforms", middlewares.AuthMiddleware(health.Handler))
 
 	handler := middlewares.Logging(middlewares.SecurityHeaders(middlewares.Cors(mux)))
 	return handler
