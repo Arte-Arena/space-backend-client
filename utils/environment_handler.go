@@ -101,6 +101,10 @@ func LoadEnvVariables() {
 		if err := os.Setenv(key, value); err != nil {
 			panic("[ENV] Erro ao definir variável de ambiente " + key + ": " + err.Error())
 		}
+
+		if _, exists := foundKeys[key]; exists {
+			foundKeys[key] = true
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
