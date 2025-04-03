@@ -110,6 +110,21 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filter = bson.D{{Key: "_id", Value: result.ID}}
+	update := bson.D{{Key: "$set", Value: bson.D{
+		{Key: "refresh_token", Value: refreshToken},
+		{Key: "updated_at", Value: time.Now()},
+	}}}
+
+	_, err = collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(utils.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_UPDATE_REFRESH_TOKEN),
+		})
+		return
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    accessToken,
@@ -213,58 +228,5 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 		Data: map[string]string{
 			"userId": claims.UserId,
 		},
-	})
-}
-
-func RefreshToken(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
-		})
-		return
-	}
-
-	refreshCookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: utils.SendInternalError(utils.REFRESH_TOKEN_INVALID_OR_EXPIRED_1),
-		})
-		return
-	}
-
-	claims, err := utils.ValidateRefreshKey(refreshCookie.Value)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: utils.SendInternalError(utils.REFRESH_TOKEN_INVALID_OR_EXPIRED_2),
-		})
-		return
-	}
-
-	newAccessToken, err := utils.GenerateAccessKey(claims.UserId)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_ACCESS_TOKEN),
-		})
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    newAccessToken,
-		Path:     "/",
-		MaxAge:   15 * 60,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-	})
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(utils.ApiResponse{
-		Message: "Token atualizado com sucesso",
 	})
 }

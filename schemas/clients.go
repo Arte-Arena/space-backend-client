@@ -11,6 +11,10 @@ type ClientsRequestToSignin struct {
 	Password string `json:"password"`
 }
 
+type ClientsUpdateAfterGenerateRefreshToken struct {
+	RefreshToken string `bson:"refresh_token"`
+}
+
 type ClientsRequestToSignout struct {
 }
 
