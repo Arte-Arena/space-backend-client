@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -15,9 +16,16 @@ const (
 	REFRESH_TOKEN_SECRET = "REFRESH_TOKEN_SECRET"
 	TOKEN_ISSUER         = "TOKEN_ISSUER"
 	TOKEN_AUDIENCE       = "TOKEN_AUDIENCE"
+	ENV                  = "ENV"
+
+	ENV_DEVELOPMENT = "development"
+	ENV_PRERELEASE  = "prerelease"
+	ENV_RELEASE     = "release"
 )
 
-var allowedKeys = [6]string{ENV_PORT, ENV_MONGODB_URI, ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, TOKEN_ISSUER, TOKEN_AUDIENCE}
+var allowedKeys = []string{ENV_PORT, ENV_MONGODB_URI, ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, TOKEN_ISSUER, TOKEN_AUDIENCE, ENV}
+
+var allowedEnvValues = []string{ENV_DEVELOPMENT, ENV_PRERELEASE, ENV_RELEASE}
 
 func LoadEnvVariables() {
 	workDir, err := os.Getwd()
@@ -69,23 +77,25 @@ func LoadEnvVariables() {
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
-		isAllowed := false
-		for _, allowedKey := range allowedKeys {
-			if key == allowedKey {
-				isAllowed = true
-				foundKeys[key] = true
-				break
+		if len(value) > 1 && (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) ||
+			(strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
+			value = value[1 : len(value)-1]
+		}
+
+		if key == ENV {
+			isValidEnv := slices.Contains(allowedEnvValues, value)
+
+			if !isValidEnv {
+				panic(fmt.Sprintf("[ENV] Valor inválido para ENV: %s. Valores permitidos: %s",
+					value, strings.Join(allowedEnvValues, ", ")))
 			}
 		}
+
+		isAllowed := slices.Contains(allowedKeys, key)
 
 		if !isAllowed {
 			panic(fmt.Sprintf("[ENV] Chave '%s' não é permitida. Chaves permitidas: %s",
 				key, strings.Join(allowedKeys[:], ", ")))
-		}
-
-		if len(value) > 1 && (strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"")) ||
-			(strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
-			value = value[1 : len(value)-1]
 		}
 
 		if err := os.Setenv(key, value); err != nil {

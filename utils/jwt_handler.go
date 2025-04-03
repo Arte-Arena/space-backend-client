@@ -7,6 +7,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	ACCESS_TOKEN_EXPIRATION  = 15 * time.Minute
+	REFRESH_TOKEN_EXPIRATION = 168 * time.Hour
+)
+
 type Claims struct {
 	UserId string `json:"userId"`
 	jwt.RegisteredClaims
@@ -16,7 +21,7 @@ func GenerateAccessKey(userId string) (string, error) {
 	accessTokenClaims := Claims{
 		userId,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ACCESS_TOKEN_EXPIRATION)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    os.Getenv(TOKEN_ISSUER),
@@ -37,7 +42,7 @@ func GenerateRefreshKey(userId string) (string, error) {
 	refreshTokenClaims := Claims{
 		userId,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(168 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(REFRESH_TOKEN_EXPIRATION)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    os.Getenv(TOKEN_ISSUER),
@@ -64,7 +69,7 @@ func ValidateAccessKey(tokenString string) (*Claims, error) {
 		jwt.WithExpirationRequired(),
 	}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(os.Getenv(ACCESS_TOKEN_SECRET)), nil
 	}, parserOptions...)
 
@@ -89,7 +94,7 @@ func ValidateRefreshKey(tokenString string) (*Claims, error) {
 		jwt.WithExpirationRequired(),
 	}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(os.Getenv(REFRESH_TOKEN_SECRET)), nil
 	}, parserOptions...)
 
