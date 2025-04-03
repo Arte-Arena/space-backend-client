@@ -17,10 +17,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func getAll(w http.ResponseWriter, r *http.Request) {
-
-}
-
 func getById(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(middlewares.UserIDKey)
 	if userId == nil {
