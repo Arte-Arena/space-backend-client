@@ -24,16 +24,16 @@ const (
 func Signin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 		return
 	}
 
-	req := schemas.ClientsRequestToSignin{}
+	req := schemas.ClientLoginRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: "Email e senha são obrigatórios",
 		})
 		return
@@ -41,7 +41,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 
 	if req.Email == "" || req.Password == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: "Email e senha são obrigatórios",
 		})
 		return
@@ -55,7 +55,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
 		})
 		return
@@ -65,19 +65,19 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	collection := client.Database(database.MONGODB_DB_ADMIN).Collection("clients")
 	filter := bson.D{{Key: "contact.email", Value: req.Email}}
 
-	result := schemas.ClientsFromMongoDBFindOne{}
+	result := schemas.ClientFromDB{}
 
 	err = collection.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: "Credenciais inválidas",
 			})
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
 		})
 		return
@@ -86,7 +86,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	err = bcrypt.CompareHashAndPassword([]byte(result.PasswordHash), []byte(req.Password))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: "Credenciais inválidas",
 		})
 		return
@@ -95,7 +95,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	accessToken, err := utils.GenerateAccessKey(result.ID.Hex())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_ACCESS_TOKEN),
 		})
 		return
@@ -104,7 +104,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	refreshToken, err := utils.GenerateRefreshKey(result.ID.Hex())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_REFRESH_TOKEN),
 		})
 		return
@@ -119,7 +119,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ERROR_TO_UPDATE_REFRESH_TOKEN),
 		})
 		return
@@ -152,7 +152,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 func Signout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 		return
@@ -180,7 +180,7 @@ func Signout(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(utils.ApiResponse{
+	json.NewEncoder(w).Encode(schemas.ApiResponse{
 		Message: "Logout realizado com sucesso",
 	})
 }
@@ -188,7 +188,7 @@ func Signout(w http.ResponseWriter, r *http.Request) {
 func Authorize(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 		return
@@ -197,7 +197,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.MISSING_AUTHORIZATION_HEADER),
 		})
 		return
@@ -205,7 +205,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 
 	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.WRONG_AUTHORIZATION_HEADER_FORMAT),
 		})
 		return
@@ -215,7 +215,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	claims, err := utils.ValidateAccessKey(tokenString)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ACCESS_TOKEN_INVALID_OR_EXPIRED),
 		})
 		return
@@ -223,10 +223,11 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(utils.ApiResponse{
+	json.NewEncoder(w).Encode(schemas.ApiResponse{
 		Message: "Token válido",
-		Data: map[string]string{
-			"userId": claims.UserId,
+		Data: schemas.AuthValidationResponse{
+			UserID: claims.UserId,
+			Valid:  true,
 		},
 	})
 }

@@ -25,10 +25,10 @@ func getById(w http.ResponseWriter, r *http.Request) {
 }
 
 func create(w http.ResponseWriter, r *http.Request) {
-	clientFromRequest := schemas.ClientsRequestToCreateOne{}
+	clientFromRequest := schemas.ClientCreateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&clientFromRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.CLIENTS_INVALID_REQUEST_DATA),
 		})
 		return
@@ -36,7 +36,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 
 	if clientFromRequest.Name == "" || clientFromRequest.Email == "" || clientFromRequest.Password == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: "Nome, email e senha são obrigatórios",
 		})
 		return
@@ -45,19 +45,19 @@ func create(w http.ResponseWriter, r *http.Request) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(clientFromRequest.Password), bcrypt.DefaultCost)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ERROR_TO_CREATE_PASSWORD_HASH),
 		})
 		return
 	}
 
-	contactToCreate := schemas.ContactToCreateOne{
+	contactToCreate := schemas.Contact{
 		Name:      clientFromRequest.Name,
 		Email:     clientFromRequest.Email,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	clientToCreate := schemas.ClientsToCreateOne{
+	clientToCreate := schemas.ClientCreateModel{
 		Contact:      contactToCreate,
 		PasswordHash: string(hashedPassword),
 		CreatedAt:    time.Now(),
@@ -72,7 +72,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	mongoClient, err := mongo.Connect(opts)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
 		})
 		return
@@ -82,11 +82,11 @@ func create(w http.ResponseWriter, r *http.Request) {
 	collection := mongoClient.Database(database.MONGODB_DB_ADMIN).Collection("clients")
 
 	filter := bson.D{{Key: "contact.email", Value: clientFromRequest.Email}}
-	existingClient := schemas.ClientsFromMongoDBFindOne{}
+	existingClient := schemas.ClientFromDB{}
 	err = collection.FindOne(ctx, filter).Decode(&existingClient)
 	if err == nil {
 		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: "Email já cadastrado",
 		})
 		return
@@ -95,7 +95,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	_, err = collection.InsertOne(ctx, clientToCreate)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.CANNOT_INSERT_CLIENT_TO_MONGODB),
 		})
 		return
@@ -123,7 +123,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		update(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(utils.ApiResponse{
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 	}

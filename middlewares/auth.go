@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"api/database"
+	"api/schemas"
 	"api/utils"
 	"context"
 	"encoding/json"
@@ -39,7 +40,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		refreshCookie, err := r.Cookie("refresh_token")
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.MISSING_REFRESH_TOKEN_IN_COOKIES),
 			})
 			return
@@ -48,7 +49,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		refreshClaims, err := utils.ValidateRefreshKey(refreshCookie.Value)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.MIDDLEWARE_REFRESH_TOKEN_INVALID_OR_EXPIRED),
 			})
 			return
@@ -62,7 +63,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		client, err := mongo.Connect(opts)
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
 			})
 			return
@@ -74,7 +75,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		userId, err := utils.ParseObjectIDFromHex(refreshClaims.UserId)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.INVALID_USER_ID_FORMAT),
 			})
 			return
@@ -90,13 +91,13 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
 				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(utils.ApiResponse{
+				json.NewEncoder(w).Encode(schemas.ApiResponse{
 					Message: utils.SendInternalError(utils.MIDDLEWARE_REFRESH_TOKEN_INVALID_OR_EXPIRED),
 				})
 				return
 			}
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
 			})
 			return
@@ -104,7 +105,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		if refreshCookie.Value != result.RefreshToken {
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.REFRESH_TOKEN_NOT_MATCHING_DATABASE),
 			})
 			return
@@ -113,7 +114,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		newAccessToken, err := utils.GenerateAccessKey(refreshClaims.UserId)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_ACCESS_TOKEN),
 			})
 			return
@@ -122,7 +123,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		newRefreshToken, err := utils.GenerateRefreshKey(refreshClaims.UserId)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_REFRESH_TOKEN),
 			})
 			return
@@ -136,7 +137,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		_, err = collection.UpdateOne(ctx, filter, update)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(utils.ApiResponse{
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.ERROR_TO_UPDATE_REFRESH_TOKEN),
 			})
 			return
