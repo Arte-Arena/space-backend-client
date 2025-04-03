@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -15,11 +16,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	ACCESS_TOKEN_COOKIE_EXPIRATION  = 15 * time.Minute
+	REFRESH_TOKEN_COOKIE_EXPIRATION = 7 * 24 * time.Hour
+)
+
 func Signin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Método não permitido",
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 		return
 	}
@@ -50,7 +56,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro ao conectar ao banco de dados",
+			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
 		})
 		return
 	}
@@ -72,7 +78,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro interno do servidor",
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
 		})
 		return
 	}
@@ -90,7 +96,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro ao gerar token de acesso",
+			Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_ACCESS_TOKEN),
 		})
 		return
 	}
@@ -99,7 +105,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro ao gerar token de atualização",
+			Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_REFRESH_TOKEN),
 		})
 		return
 	}
@@ -108,7 +114,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
-		MaxAge:   15 * 60,
+		MaxAge:   int(ACCESS_TOKEN_COOKIE_EXPIRATION),
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
@@ -118,7 +124,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		Path:     "/",
-		MaxAge:   7 * 24 * 60 * 60,
+		MaxAge:   int(REFRESH_TOKEN_COOKIE_EXPIRATION),
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
@@ -132,7 +138,7 @@ func Signout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Método não permitido",
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 		return
 	}
@@ -168,7 +174,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Método não permitido",
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 		return
 	}
@@ -177,7 +183,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Cabeçalho de autorização é obrigatório",
+			Message: utils.SendInternalError(utils.MISSING_AUTHORIZATION_HEADER),
 		})
 		return
 	}
@@ -185,7 +191,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Formato de autorização inválido",
+			Message: utils.SendInternalError(utils.WRONG_AUTHORIZATION_HEADER_FORMAT),
 		})
 		return
 	}
@@ -195,7 +201,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Token inválido ou expirado",
+			Message: utils.SendInternalError(utils.ACCESS_TOKEN_INVALID_OR_EXPIRED),
 		})
 		return
 	}
@@ -214,7 +220,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Método não permitido",
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 		return
 	}
@@ -223,7 +229,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Refresh token não encontrado",
+			Message: utils.SendInternalError(utils.REFRESH_TOKEN_INVALID_OR_EXPIRED_1),
 		})
 		return
 	}
@@ -232,7 +238,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Refresh token inválido ou expirado",
+			Message: utils.SendInternalError(utils.REFRESH_TOKEN_INVALID_OR_EXPIRED_2),
 		})
 		return
 	}
@@ -241,7 +247,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro ao gerar novo token de acesso",
+			Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_ACCESS_TOKEN),
 		})
 		return
 	}

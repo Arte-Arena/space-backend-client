@@ -30,7 +30,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(utils.ApiResponse{
-				Message: "Tokens de autenticação não encontrados",
+				Message: utils.SendInternalError(utils.MISSING_REFRESH_TOKEN_IN_COOKIES),
 			})
 			return
 		}
@@ -39,7 +39,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(utils.ApiResponse{
-				Message: "Refresh token inválido ou expirado",
+				Message: utils.SendInternalError(utils.MIDDLEWARE_REFRESH_TOKEN_INVALID_OR_EXPIRED),
 			})
 			return
 		}
@@ -48,7 +48,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(utils.ApiResponse{
-				Message: "Erro ao gerar novo token de acesso",
+				Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_ACCESS_TOKEN),
 			})
 			return
 		}
@@ -57,7 +57,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(utils.ApiResponse{
-				Message: "Erro ao gerar novo refresh token",
+				Message: utils.SendInternalError(utils.ERROR_WHEN_GENERATE_REFRESH_TOKEN),
 			})
 			return
 		}

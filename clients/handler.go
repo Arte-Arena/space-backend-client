@@ -29,7 +29,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&clientFromRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Dados inválidos",
+			Message: utils.SendInternalError(utils.CLIENTS_INVALID_REQUEST_DATA),
 		})
 		return
 	}
@@ -46,7 +46,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro ao processar a senha",
+			Message: utils.SendInternalError(utils.ERROR_TO_CREATE_PASSWORD_HASH),
 		})
 		return
 	}
@@ -73,7 +73,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro ao conectar ao banco de dados",
+			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
 		})
 		return
 	}
@@ -96,7 +96,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Erro ao criar cliente",
+			Message: utils.SendInternalError(utils.CANNOT_INSERT_CLIENT_TO_MONGODB),
 		})
 		return
 	}
@@ -124,7 +124,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(utils.ApiResponse{
-			Message: "Método não permitido",
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
 		})
 	}
 }
