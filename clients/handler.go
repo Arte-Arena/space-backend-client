@@ -185,11 +185,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 func Handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if r.URL.Query().Get("id") != "" {
-			getById(w, r)
-		} else {
-			getAll(w, r)
-		}
+		getById(w, r)
 	case http.MethodPost:
 		create(w, r)
 	case http.MethodPatch:
