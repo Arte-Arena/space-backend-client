@@ -2,6 +2,7 @@ package clients
 
 import (
 	"api/database"
+	"api/middlewares"
 	"api/schemas"
 	"api/utils"
 	"context"
@@ -21,7 +22,79 @@ func getAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func getById(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middlewares.UserIDKey)
+	if userId == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Usuário não autorizado",
+		})
+		return
+	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
+	defer cancel()
+
+	mongoURI := os.Getenv(utils.ENV_MONGODB_URI)
+	opts := options.Client().ApplyURI(mongoURI)
+	mongoClient, err := mongo.Connect(opts)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
+		})
+		return
+	}
+	defer mongoClient.Disconnect(ctx)
+
+	collection := mongoClient.Database(database.MONGODB_DB_ADMIN).Collection("clients")
+
+	userIdStr, ok := userId.(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.INVALID_USER_ID_FORMAT),
+		})
+		return
+	}
+
+	objectId, err := utils.ParseObjectIDFromHex(userIdStr)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.INVALID_USER_ID_FORMAT),
+		})
+		return
+	}
+
+	filter := bson.D{{Key: "_id", Value: objectId}}
+	client := schemas.ClientFromDB{}
+	err = collection.FindOne(ctx, filter).Decode(&client)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
+				Message: "Cliente não encontrado",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+		})
+		return
+	}
+
+	clientResponse := schemas.ClientResponse{
+		ID:        client.ID.Hex(),
+		Contact:   client.Contact,
+		CreatedAt: client.CreatedAt,
+		UpdatedAt: client.UpdatedAt,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(schemas.ApiResponse{
+		Data: clientResponse,
+	})
 }
 
 func create(w http.ResponseWriter, r *http.Request) {

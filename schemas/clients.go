@@ -42,8 +42,7 @@ type ClientCreateModel struct {
 
 type ClientResponse struct {
 	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
+	Contact   Contact   `json:"contact"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

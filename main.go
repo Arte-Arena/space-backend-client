@@ -4,6 +4,7 @@ import (
 	"api/auth"
 	"api/clients"
 	"api/middlewares"
+	"api/schemas"
 	"api/utils"
 	"context"
 	"fmt"
@@ -31,7 +32,7 @@ func setupRouter() http.Handler {
 func main() {
 	utils.LoadEnvVariables()
 
-	config := utils.Config{
+	config := schemas.Config{
 		Port:         os.Getenv(utils.ENV_PORT),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,

@@ -43,3 +43,10 @@ type ApiResponse struct {
 	Message string `json:"message,omitempty"`
 	Data    any    `json:"data,omitempty"`
 }
+
+type Config struct {
+	Port         string
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+}
