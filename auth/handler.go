@@ -212,7 +212,7 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	}
 	tokenString := authHeader[7:]
 
-	claims, err := utils.ValidateAccessKey(tokenString)
+	_, err := utils.ValidateAccessKey(tokenString)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
@@ -221,13 +221,5 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(schemas.ApiResponse{
-		Message: "Token válido",
-		Data: schemas.AuthValidationResponse{
-			UserID: claims.UserId,
-			Valid:  true,
-		},
-	})
 }
