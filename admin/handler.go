@@ -90,7 +90,7 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uniformToCreate := schemas.UniformFromDB{
+	uniformToCreate := schemas.UniformToDB{
 		ClientID:  existingClient.ID.Hex(),
 		BudgetID:  uniformRequest.BudgetID,
 		Sketches:  uniformRequest.Sketches,
@@ -167,6 +167,10 @@ func allowUniformToEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func getUniformsByBudgetId(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {

@@ -44,6 +44,15 @@ type UniformFromDB struct {
 	UpdatedAt time.Time     `bson:"updated_at"`
 }
 
+type UniformToDB struct {
+	ClientID  string    `bson:"client_id"`
+	BudgetID  int       `bson:"budget_id"`
+	Sketches  []Sketch  `bson:"sketches"`
+	Editable  bool      `bson:"editable"`
+	CreatedAt time.Time `bson:"created_at"`
+	UpdatedAt time.Time `bson:"updated_at"`
+}
+
 type UniformCreateRequest struct {
 	ClientID string   `json:"client_id"`
 	BudgetID int      `json:"budget_id"`
