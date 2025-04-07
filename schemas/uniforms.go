@@ -13,8 +13,8 @@ const (
 	PackageTypePrata    PackageType = "Prata"
 	PackageTypeOuro     PackageType = "Ouro"
 	PackageTypeDiamante PackageType = "Diamante"
-	PackageTypePro      PackageType = "Pro"
-	PackageTypePremium  PackageType = "Premium"
+	PackageTypePro      PackageType = "Premium"
+	PackageTypePremium  PackageType = "Profissional"
 )
 
 type Player struct {
@@ -29,6 +29,7 @@ type Player struct {
 
 type Sketch struct {
 	ID          string      `json:"id" bson:"id"`
+	PlayerCount int         `json:"player_count" bson:"player_count"`
 	PackageType PackageType `json:"package_type" bson:"package_type"`
 	Players     []Player    `json:"players" bson:"players"`
 }
