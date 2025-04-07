@@ -170,7 +170,87 @@ func allowUniformToEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUniformsByBudgetId(w http.ResponseWriter, r *http.Request) {
+	budgetIDStr := r.URL.Query().Get("budget_id")
+	if budgetIDStr == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "BudgetID é obrigatório",
+		})
+		return
+	}
 
+	budgetID, err := utils.ParseIntOrDefault(budgetIDStr, 0)
+	if err != nil || budgetID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "BudgetID inválido",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
+	defer cancel()
+
+	mongoURI := os.Getenv(utils.ENV_MONGODB_URI)
+	opts := options.Client().ApplyURI(mongoURI)
+	client, err := mongo.Connect(opts)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
+		})
+		return
+	}
+	defer client.Disconnect(ctx)
+
+	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+	filter := bson.D{{Key: "budget_id", Value: budgetID}}
+
+	cursor, err := uniformsCollection.Find(ctx, filter)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+		})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var uniforms []schemas.UniformFromDB
+	if err = cursor.All(ctx, &uniforms); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+		})
+		return
+	}
+
+	if len(uniforms) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Nenhum uniforme encontrado para este orçamento",
+		})
+		return
+	}
+
+	var uniformResponses []schemas.UniformResponse
+	for _, uniform := range uniforms {
+		uniformResponses = append(uniformResponses, schemas.UniformResponse{
+			ID:        uniform.ID.Hex(),
+			ClientID:  uniform.ClientID,
+			BudgetID:  uniform.BudgetID,
+			Sketches:  uniform.Sketches,
+			Editable:  uniform.Editable,
+			CreatedAt: uniform.CreatedAt,
+			UpdatedAt: uniform.UpdatedAt,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(schemas.ApiResponse{
+		Data: uniformResponses,
+	})
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +259,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		addUniformWithBudgetId(w, r)
 	case http.MethodPatch:
 		allowUniformToEdit(w, r)
+	case http.MethodGet:
+		getUniformsByBudgetId(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
