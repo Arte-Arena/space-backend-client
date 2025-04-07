@@ -16,24 +16,6 @@ import (
 )
 
 func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
-	adminKey := r.Header.Get("X-Admin-Key")
-	if adminKey == "" {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Chave de administrador não fornecida",
-		})
-		return
-	}
-
-	envAdminKey := os.Getenv(utils.ADMIN_KEY)
-	if adminKey != envAdminKey {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Chave de administrador inválida",
-		})
-		return
-	}
-
 	uniformRequest := schemas.AdminUniformCreateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&uniformRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -108,13 +90,71 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 }
 
 func allowUniformToEdit(w http.ResponseWriter, r *http.Request) {
+	uniformRequest := struct {
+		BudgetID int `json:"budget_id"`
+	}{}
 
+	if err := json.NewDecoder(r.Body).Decode(&uniformRequest); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Dados inválidos",
+		})
+		return
+	}
+
+	if uniformRequest.BudgetID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "BudgetID é obrigatório",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
+	defer cancel()
+
+	mongoURI := os.Getenv(utils.ENV_MONGODB_URI)
+	opts := options.Client().ApplyURI(mongoURI)
+	client, err := mongo.Connect(opts)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
+		})
+		return
+	}
+	defer client.Disconnect(ctx)
+
+	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+	filter := bson.D{{Key: "budget_id", Value: uniformRequest.BudgetID}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "editable", Value: true}}}}
+
+	result, err := uniformsCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+		})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Uniforme não encontrado",
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		addUniformWithBudgetId(w, r)
+	case http.MethodPatch:
+		allowUniformToEdit(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
