@@ -72,7 +72,7 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 		ClientID:  existingClient.ID.Hex(),
 		BudgetID:  uniformRequest.BudgetID,
 		Sketches:  uniformRequest.Sketches,
-		Editable:  uniformRequest.Editable,
+		Editable:  true,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
