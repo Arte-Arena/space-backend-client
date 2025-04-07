@@ -6,3 +6,7 @@ type AdminUniformCreateRequest struct {
 	Sketches    []Sketch `json:"sketches"`
 	Editable    bool     `json:"editable"`
 }
+
+type AllowUniformToEditRequest struct {
+	BudgetID int `json:"budget_id"`
+}

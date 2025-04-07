@@ -90,9 +90,7 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 }
 
 func allowUniformToEdit(w http.ResponseWriter, r *http.Request) {
-	uniformRequest := struct {
-		BudgetID int `json:"budget_id"`
-	}{}
+	uniformRequest := schemas.AllowUniformToEditRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(&uniformRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
