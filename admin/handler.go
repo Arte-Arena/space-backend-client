@@ -68,6 +68,28 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+
+	existingUniformFilter := bson.D{
+		{Key: "client_id", Value: existingClient.ID.Hex()},
+		{Key: "budget_id", Value: uniformRequest.BudgetID},
+	}
+
+	existingUniform := schemas.UniformFromDB{}
+	err = uniformsCollection.FindOne(ctx, existingUniformFilter).Decode(&existingUniform)
+	if err == nil {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Já existe um uniforme cadastrado para este cliente com este orçamento",
+		})
+		return
+	} else if err != mongo.ErrNoDocuments {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+		})
+		return
+	}
+
 	uniformToCreate := schemas.UniformFromDB{
 		ClientID:  existingClient.ID.Hex(),
 		BudgetID:  uniformRequest.BudgetID,
