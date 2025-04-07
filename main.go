@@ -1,6 +1,7 @@
 package main
 
 import (
+	"api/admin"
 	"api/auth"
 	"api/clients"
 	"api/middlewares"
@@ -21,6 +22,8 @@ func setupRouter() http.Handler {
 	mux.HandleFunc("/v1/auth/signin", auth.Signin)
 	mux.HandleFunc("/v1/auth/authorize", auth.Authorize)
 	mux.HandleFunc("/v1/auth/signout", auth.Signout)
+
+	mux.HandleFunc("/v1/admin/uniforms", admin.Handler)
 
 	mux.HandleFunc("/v1/clients", middlewares.AuthMiddleware(clients.Handler))
 	mux.HandleFunc("/v1/uniforms", middlewares.AuthMiddleware(clients.Handler))
