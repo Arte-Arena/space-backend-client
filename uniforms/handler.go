@@ -244,6 +244,10 @@ func updatePlayers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		for i := range update.Players {
+			update.Players[i].Ready = false
+		}
+
 		updatedSketches[sketchIndex].Players = update.Players
 	}
 
