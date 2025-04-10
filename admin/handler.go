@@ -111,8 +111,8 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func allowUniformToEdit(w http.ResponseWriter, r *http.Request) {
-	uniformRequest := schemas.AllowUniformToEditRequest{}
+func updatePlayersData(w http.ResponseWriter, r *http.Request) {
+	uniformRequest := schemas.UpdatePlayersDataRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(&uniformRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -147,7 +147,55 @@ func allowUniformToEdit(w http.ResponseWriter, r *http.Request) {
 
 	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
 	filter := bson.D{{Key: "budget_id", Value: uniformRequest.BudgetID}}
-	update := bson.D{{Key: "$set", Value: bson.D{{Key: "editable", Value: true}}}}
+
+	uniform := schemas.UniformFromDB{}
+	err = uniformsCollection.FindOne(ctx, filter).Decode(&uniform)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
+				Message: "Uniforme não encontrado",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+		})
+		return
+	}
+
+	updateDoc := bson.D{}
+
+	editableParam := r.URL.Query().Get("editable")
+	if editableParam == "true" {
+		updateDoc = append(updateDoc, bson.E{Key: "editable", Value: true})
+	}
+
+	if len(uniformRequest.Players) > 0 {
+		for i, sketch := range uniform.Sketches {
+			for j, player := range sketch.Players {
+				for _, updatedPlayer := range uniformRequest.Players {
+					if player.Name == updatedPlayer.Name && player.Number == updatedPlayer.Number {
+						uniform.Sketches[i].Players[j].Ready = updatedPlayer.Ready
+						uniform.Sketches[i].Players[j].Observations = updatedPlayer.Observations
+					}
+				}
+			}
+		}
+		updateDoc = append(updateDoc, bson.E{Key: "sketches", Value: uniform.Sketches})
+	}
+
+	if len(updateDoc) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Nenhuma atualização fornecida",
+		})
+		return
+	}
+
+	updateDoc = append(updateDoc, bson.E{Key: "updated_at", Value: time.Now()})
+	update := bson.D{{Key: "$set", Value: updateDoc}}
 
 	result, err := uniformsCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -258,7 +306,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		addUniformWithBudgetId(w, r)
 	case http.MethodPatch:
-		allowUniformToEdit(w, r)
+		updatePlayersData(w, r)
 	case http.MethodGet:
 		getUniformsByBudgetId(w, r)
 	default:

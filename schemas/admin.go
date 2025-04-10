@@ -6,6 +6,7 @@ type AdminUniformCreateRequest struct {
 	Sketches    []Sketch `json:"sketches"`
 }
 
-type AllowUniformToEditRequest struct {
-	BudgetID int `json:"budget_id"`
+type UpdatePlayersDataRequest struct {
+	BudgetID int      `json:"budget_id"`
+	Players  []Player `json:"players,omitempty"`
 }
