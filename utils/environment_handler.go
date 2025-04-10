@@ -20,13 +20,12 @@ const (
 	ADMIN_KEY            = "ADMIN_KEY"
 
 	ENV_DEVELOPMENT = "development"
-	ENV_PRERELEASE  = "prerelease"
-	ENV_RELEASE     = "release"
+	ENV_RELEASE     = "production"
 )
 
 var allowedKeys = []string{ENV_PORT, ENV_MONGODB_URI, ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, TOKEN_ISSUER, TOKEN_AUDIENCE, ENV, ADMIN_KEY}
 
-var allowedEnvValues = []string{ENV_DEVELOPMENT, ENV_PRERELEASE, ENV_RELEASE}
+var allowedEnvValues = []string{ENV_DEVELOPMENT, ENV_RELEASE}
 
 func LoadEnvVariables() {
 	workDir, err := os.Getwd()

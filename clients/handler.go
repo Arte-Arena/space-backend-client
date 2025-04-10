@@ -42,7 +42,7 @@ func getById(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.MONGODB_DB_ADMIN).Collection("clients")
+	collection := mongoClient.Database(database.GetDB()).Collection("clients")
 
 	userIdStr, ok := userId.(string)
 	if !ok {
@@ -148,7 +148,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.MONGODB_DB_ADMIN).Collection("clients")
+	collection := mongoClient.Database(database.GetDB()).Collection("clients")
 
 	filter := bson.D{{Key: "contact.email", Value: clientFromRequest.Email}}
 	existingClient := schemas.ClientFromDB{}
@@ -208,7 +208,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 	}
 	defer mongoClient.Disconnect(ctx)
 
-	collection := mongoClient.Database(database.MONGODB_DB_ADMIN).Collection("clients")
+	collection := mongoClient.Database(database.GetDB()).Collection("clients")
 
 	userIdStr, ok := userId.(string)
 	if !ok {

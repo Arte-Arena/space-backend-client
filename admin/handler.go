@@ -48,7 +48,7 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Disconnect(ctx)
 
-	clientsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("clients")
+	clientsCollection := client.Database(database.GetDB()).Collection("clients")
 	filter := bson.D{{Key: "contact.email", Value: uniformRequest.ClientEmail}}
 	existingClient := schemas.ClientFromDB{}
 	err = clientsCollection.FindOne(ctx, filter).Decode(&existingClient)
@@ -67,7 +67,7 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+	uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
 
 	existingUniformFilter := bson.D{
 		{Key: "client_id", Value: existingClient.ID.Hex()},
@@ -155,7 +155,7 @@ func updatePlayersData(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Disconnect(ctx)
 
-	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+	uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
 	filter := bson.D{{Key: "budget_id", Value: budgetID}}
 
 	uniform := schemas.UniformFromDB{}
@@ -258,7 +258,7 @@ func getUniformsByBudgetId(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Disconnect(ctx)
 
-	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+	uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
 	filter := bson.D{{Key: "budget_id", Value: budgetID}}
 
 	cursor, err := uniformsCollection.Find(ctx, filter)

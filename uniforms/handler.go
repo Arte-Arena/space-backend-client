@@ -59,7 +59,7 @@ func getUniformById(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Disconnect(ctx)
 
-	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+	uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
 	filter := bson.D{{Key: "_id", Value: objectID}}
 
 	var uniform schemas.UniformFromDB
@@ -173,7 +173,7 @@ func updatePlayers(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Disconnect(ctx)
 
-	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
+	uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
 
 	filter := bson.D{{Key: "_id", Value: objectID}}
 	var existingUniform schemas.UniformFromDB

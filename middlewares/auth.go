@@ -70,7 +70,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 		defer client.Disconnect(ctx)
 
-		collection := client.Database(database.MONGODB_DB_ADMIN).Collection("clients")
+		collection := client.Database(database.GetDB()).Collection("clients")
 
 		userId, err := utils.ParseObjectIDFromHex(refreshClaims.UserId)
 		if err != nil {

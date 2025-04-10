@@ -62,7 +62,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	}
 	defer client.Disconnect(ctx)
 
-	collection := client.Database(database.MONGODB_DB_ADMIN).Collection("clients")
+	collection := client.Database(database.GetDB()).Collection("clients")
 	filter := bson.D{{Key: "contact.email", Value: req.Email}}
 
 	result := schemas.ClientFromDB{}
