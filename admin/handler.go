@@ -112,7 +112,7 @@ func addUniformWithBudgetId(w http.ResponseWriter, r *http.Request) {
 }
 
 func updatePlayersData(w http.ResponseWriter, r *http.Request) {
-	uniformRequest := schemas.UpdatePlayersDataRequest{}
+	uniformRequest := schemas.PlayersUpdateRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(&uniformRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -122,10 +122,20 @@ func updatePlayersData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if uniformRequest.BudgetID == 0 {
+	budgetIDStr := r.URL.Query().Get("budget_id")
+	if budgetIDStr == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: "BudgetID é obrigatório",
+		})
+		return
+	}
+
+	budgetID, err := utils.ParseIntOrDefault(budgetIDStr, 0)
+	if err != nil || budgetID == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "BudgetID inválido",
 		})
 		return
 	}
@@ -146,7 +156,7 @@ func updatePlayersData(w http.ResponseWriter, r *http.Request) {
 	defer client.Disconnect(ctx)
 
 	uniformsCollection := client.Database(database.MONGODB_DB_ADMIN).Collection("uniforms")
-	filter := bson.D{{Key: "budget_id", Value: uniformRequest.BudgetID}}
+	filter := bson.D{{Key: "budget_id", Value: budgetID}}
 
 	uniform := schemas.UniformFromDB{}
 	err = uniformsCollection.FindOne(ctx, filter).Decode(&uniform)
@@ -172,14 +182,11 @@ func updatePlayersData(w http.ResponseWriter, r *http.Request) {
 		updateDoc = append(updateDoc, bson.E{Key: "editable", Value: true})
 	}
 
-	if len(uniformRequest.Players) > 0 {
-		for i, sketch := range uniform.Sketches {
-			for j, player := range sketch.Players {
-				for _, updatedPlayer := range uniformRequest.Players {
-					if player.Name == updatedPlayer.Name && player.Number == updatedPlayer.Number {
-						uniform.Sketches[i].Players[j].Ready = updatedPlayer.Ready
-						uniform.Sketches[i].Players[j].Observations = updatedPlayer.Observations
-					}
+	if len(uniformRequest.Updates) > 0 {
+		for _, update := range uniformRequest.Updates {
+			for i, sketch := range uniform.Sketches {
+				if sketch.ID == update.SketchID {
+					uniform.Sketches[i].Players = update.Players
 				}
 			}
 		}
