@@ -85,4 +85,4 @@ type ProdutoResponse struct {
     Preco  float64 `json:"preco"`
     // ...
 }
-``` 
+```

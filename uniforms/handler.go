@@ -251,6 +251,7 @@ func updatePlayers(w http.ResponseWriter, r *http.Request) {
 		{Key: "$set", Value: bson.D{
 			{Key: "sketches", Value: updatedSketches},
 			{Key: "updated_at", Value: time.Now()},
+			{Key: "editable", Value: false},
 		}},
 	}
 
