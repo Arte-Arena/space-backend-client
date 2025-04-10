@@ -21,6 +21,7 @@ func setupRouter() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/v1/auth/signin", auth.Signin)
+	mux.HandleFunc("/v1/auth/signup", auth.Signup)
 	mux.HandleFunc("/v1/auth/authorize", auth.Authorize)
 	mux.HandleFunc("/v1/auth/signout", auth.Signout)
 
