@@ -6,6 +6,7 @@ import (
 	"api/utils"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -291,6 +292,26 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	err = utils.RegisterClientInTinyWithID(&contactToCreate)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TINY_API_INTEGRATION),
+		})
+		return
+	}
+
+	if contactToCreate.TinyID == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TINY_ID_NOT_GENERATED),
+		})
+		return
+	}
+
+	clientToCreate.Contact.TinyID = contactToCreate.TinyID
 
 	_, err = collection.InsertOne(ctx, clientToCreate)
 	if err != nil {

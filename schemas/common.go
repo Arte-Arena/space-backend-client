@@ -30,6 +30,7 @@ type Contact struct {
 	BillingState            string    `json:"billing_state,omitempty" bson:"billing_state,omitempty"`
 	DifferentBillingAddress bool      `json:"different_billing_address,omitempty" bson:"different_billing_address,omitempty"`
 	Status                  string    `json:"status,omitempty" bson:"status,omitempty"`
+	TinyID                  string    `json:"tiny_id,omitempty" bson:"tiny_id,omitempty"`
 	CreatedAt               time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt               time.Time `json:"updated_at" bson:"updated_at"`
 }

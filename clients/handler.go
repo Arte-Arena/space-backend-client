@@ -278,6 +278,53 @@ func update(w http.ResponseWriter, r *http.Request) {
 
 	update := bson.D{{Key: "$set", Value: updateFields}}
 
+	updatedClient := schemas.ClientFromDB{}
+	err = collection.FindOne(ctx, filter).Decode(&updatedClient)
+	if err == nil {
+		if updatedClient.Contact.TinyID != "" {
+			tinyRequest := utils.UpdateContactFromClient(updatedClient.Contact, updatedClient.Contact.TinyID)
+			tinyID, err := utils.UpdateTinyContact(tinyRequest)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(schemas.ApiResponse{
+					Message: utils.SendInternalError(utils.ERROR_TINY_API_INTEGRATION),
+				})
+				return
+			} else if tinyID != "" && tinyID != updatedClient.Contact.TinyID {
+				updateTinyIDFields := bson.D{{Key: "contact.tiny_id", Value: tinyID}}
+				updateTinyID := bson.D{{Key: "$set", Value: updateTinyIDFields}}
+				_, updateErr := collection.UpdateOne(ctx, filter, updateTinyID)
+				if updateErr != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(schemas.ApiResponse{
+						Message: utils.SendInternalError(utils.ERROR_TO_UPDATE_CLIENT_TO_MONGODB),
+					})
+					return
+				}
+			}
+		} else {
+			err = utils.RegisterClientInTinyWithID(&updatedClient.Contact)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(schemas.ApiResponse{
+					Message: utils.SendInternalError(utils.ERROR_TINY_API_INTEGRATION),
+				})
+				return
+			} else if updatedClient.Contact.TinyID != "" {
+				updateTinyIDFields := bson.D{{Key: "contact.tiny_id", Value: updatedClient.Contact.TinyID}}
+				updateTinyID := bson.D{{Key: "$set", Value: updateTinyIDFields}}
+				_, updateErr := collection.UpdateOne(ctx, filter, updateTinyID)
+				if updateErr != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(schemas.ApiResponse{
+						Message: utils.SendInternalError(utils.ERROR_TO_UPDATE_CLIENT_TO_MONGODB),
+					})
+					return
+				}
+			}
+		}
+	}
+
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
