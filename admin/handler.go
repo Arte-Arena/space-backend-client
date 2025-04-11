@@ -434,6 +434,7 @@ func addBudgetIDToClient(w http.ResponseWriter, r *http.Request) {
 
 func getClientsByBudgetIDs(w http.ResponseWriter, r *http.Request) {
 	budgetIDsQuery := r.URL.Query().Get("budget_ids")
+	withUniform := r.URL.Query().Get("with_uniform") == "true"
 
 	var budgetIDs []int
 
@@ -512,14 +513,59 @@ func getClientsByBudgetIDs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var clientResponses []schemas.ClientResponse
+
+	uniformsMap := make(map[string]map[int]bool)
+
+	if withUniform {
+		uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
+
+		var clientIDs []bson.D
+		for _, client := range clients {
+			clientIDs = append(clientIDs, bson.D{{Key: "client_id", Value: client.ID.Hex()}})
+		}
+
+		uniformFilter := bson.D{{Key: "$or", Value: clientIDs}}
+		uniformCursor, err := uniformsCollection.Find(ctx, uniformFilter)
+
+		if err == nil {
+			var uniforms []schemas.UniformFromDB
+			if err = uniformCursor.All(ctx, &uniforms); err == nil {
+				for _, uniform := range uniforms {
+					if _, exists := uniformsMap[uniform.ClientID]; !exists {
+						uniformsMap[uniform.ClientID] = make(map[int]bool)
+					}
+					uniformsMap[uniform.ClientID][uniform.BudgetID] = true
+				}
+			}
+			uniformCursor.Close(ctx)
+		}
+	}
+
 	for _, clientFromDB := range clients {
-		clientResponses = append(clientResponses, schemas.ClientResponse{
+		clientResponse := schemas.ClientResponse{
 			ID:        clientFromDB.ID.Hex(),
 			Contact:   clientFromDB.Contact,
 			BudgetIDs: clientFromDB.BudgetIDs,
 			CreatedAt: clientFromDB.CreatedAt,
 			UpdatedAt: clientFromDB.UpdatedAt,
-		})
+		}
+
+		if withUniform {
+			clientID := clientFromDB.ID.Hex()
+			hasUniform := make(map[int]bool)
+
+			for _, budgetID := range clientFromDB.BudgetIDs {
+				if uniformsMap[clientID] != nil && uniformsMap[clientID][budgetID] {
+					hasUniform[budgetID] = true
+				} else {
+					hasUniform[budgetID] = false
+				}
+			}
+
+			clientResponse.HasUniform = hasUniform
+		}
+
+		clientResponses = append(clientResponses, clientResponse)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

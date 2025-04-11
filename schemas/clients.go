@@ -71,11 +71,12 @@ type ClientCreateModel struct {
 }
 
 type ClientResponse struct {
-	ID        string    `json:"id"`
-	Contact   Contact   `json:"contact"`
-	BudgetIDs []int     `json:"budget_ids,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         string       `json:"id"`
+	Contact    Contact      `json:"contact"`
+	BudgetIDs  []int        `json:"budget_ids,omitempty"`
+	HasUniform map[int]bool `json:"has_uniform,omitempty"`
+	CreatedAt  time.Time    `json:"created_at"`
+	UpdatedAt  time.Time    `json:"updated_at"`
 }
 
 type ClientAddBudgetRequest struct {
