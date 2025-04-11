@@ -16,25 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-func getUniformById(w http.ResponseWriter, r *http.Request) {
-	uniformID := r.URL.Query().Get("id")
-	if uniformID == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "ID do uniforme é obrigatório",
-		})
-		return
-	}
-
-	objectID, err := utils.ParseObjectIDFromHex(uniformID)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "ID do uniforme inválido",
-		})
-		return
-	}
-
+func getUniforms(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(middlewares.UserIDKey)
 	if userId == nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -43,6 +25,17 @@ func getUniformById(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	userIdStr, ok := userId.(string)
+	if !ok {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.INVALID_USER_ID_FORMAT),
+		})
+		return
+	}
+
+	uniformID := r.URL.Query().Get("id")
 
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
 	defer cancel()
@@ -60,18 +53,77 @@ func getUniformById(w http.ResponseWriter, r *http.Request) {
 	defer client.Disconnect(ctx)
 
 	uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
-	filter := bson.D{{Key: "_id", Value: objectID}}
 
-	var uniform schemas.UniformFromDB
-	err = uniformsCollection.FindOne(ctx, filter).Decode(&uniform)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			w.WriteHeader(http.StatusNotFound)
+	if uniformID != "" {
+		objectID, err := utils.ParseObjectIDFromHex(uniformID)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(schemas.ApiResponse{
-				Message: "Uniforme não encontrado",
+				Message: "ID do uniforme inválido",
 			})
 			return
 		}
+
+		filter := bson.D{{Key: "_id", Value: objectID}}
+
+		var uniform schemas.UniformFromDB
+		err = uniformsCollection.FindOne(ctx, filter).Decode(&uniform)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(schemas.ApiResponse{
+					Message: "Uniforme não encontrado",
+				})
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
+				Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+			})
+			return
+		}
+
+		if uniform.ClientID != userIdStr {
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(schemas.ApiResponse{
+				Message: "Você não tem permissão para visualizar este uniforme",
+			})
+			return
+		}
+
+		uniformResponse := schemas.UniformResponse{
+			ID:        uniform.ID.Hex(),
+			ClientID:  uniform.ClientID,
+			BudgetID:  uniform.BudgetID,
+			Sketches:  uniform.Sketches,
+			Editable:  uniform.Editable,
+			CreatedAt: uniform.CreatedAt,
+			UpdatedAt: uniform.UpdatedAt,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Data: uniformResponse,
+		})
+		return
+	}
+
+	filter := bson.D{{Key: "client_id", Value: userIdStr}}
+	findOptions := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+	cursor, err := uniformsCollection.Find(ctx, filter, findOptions)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
+		})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var uniforms []schemas.UniformFromDB
+	if err = cursor.All(ctx, &uniforms); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
@@ -79,37 +131,32 @@ func getUniformById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userIdStr, ok := userId.(string)
-	if !ok {
-		w.WriteHeader(http.StatusInternalServerError)
+	if len(uniforms) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.INVALID_USER_ID_FORMAT),
+			Data: []schemas.UniformResponse{},
 		})
 		return
 	}
 
-	if uniform.ClientID != userIdStr {
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Você não tem permissão para visualizar este uniforme",
-		})
-		return
-	}
-
-	uniformResponse := schemas.UniformResponse{
-		ID:        uniform.ID.Hex(),
-		ClientID:  uniform.ClientID,
-		BudgetID:  uniform.BudgetID,
-		Sketches:  uniform.Sketches,
-		Editable:  uniform.Editable,
-		CreatedAt: uniform.CreatedAt,
-		UpdatedAt: uniform.UpdatedAt,
+	uniformResponses := make([]schemas.UniformResponse, len(uniforms))
+	for i, uniform := range uniforms {
+		uniformResponses[i] = schemas.UniformResponse{
+			ID:        uniform.ID.Hex(),
+			ClientID:  uniform.ClientID,
+			BudgetID:  uniform.BudgetID,
+			Sketches:  uniform.Sketches,
+			Editable:  uniform.Editable,
+			CreatedAt: uniform.CreatedAt,
+			UpdatedAt: uniform.UpdatedAt,
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(schemas.ApiResponse{
-		Data: uniformResponse,
+		Data: uniformResponses,
 	})
 }
 
@@ -306,7 +353,7 @@ func updatePlayers(w http.ResponseWriter, r *http.Request) {
 func Handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		getUniformById(w, r)
+		getUniforms(w, r)
 	case http.MethodPatch:
 		updatePlayers(w, r)
 	default:
