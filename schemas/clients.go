@@ -23,6 +23,7 @@ type ClientFromDB struct {
 	Contact      Contact       `bson:"contact,omitempty"`
 	PasswordHash string        `bson:"password_hash"`
 	RefreshToken string        `bson:"refresh_token,omitempty"`
+	BudgetIDs    []int         `bson:"budget_ids,omitempty"`
 	CreatedAt    time.Time     `bson:"created_at"`
 	UpdatedAt    time.Time     `bson:"updated_at"`
 }
@@ -72,6 +73,16 @@ type ClientCreateModel struct {
 type ClientResponse struct {
 	ID        string    `json:"id"`
 	Contact   Contact   `json:"contact"`
+	BudgetIDs []int     `json:"budget_ids,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ClientAddBudgetRequest struct {
+	Email    string `json:"email"`
+	BudgetID int    `json:"budget_id"`
+}
+
+type ClientsByBudgetIDsRequest struct {
+	BudgetIDs []int `json:"budget_ids"`
 }
