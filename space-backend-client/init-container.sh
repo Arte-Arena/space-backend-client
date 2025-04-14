@@ -13,5 +13,5 @@ echo "TINY_API_TOKEN=$TINY_API_TOKEN" >> .env
 
 echo "[arte arena security] Configurando variáveis de ambiente..."
 
-./main
+/app/main
 tail -f /dev/null
