@@ -6,7 +6,7 @@ import (
 	"api/utils"
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -314,7 +314,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	_, err = collection.InsertOne(ctx, clientToCreate)
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Erro ao criar cliente: %s", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.CANNOT_INSERT_CLIENT_TO_MONGODB),
