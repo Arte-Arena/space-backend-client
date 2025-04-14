@@ -312,6 +312,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	clientToCreate.Contact.TinyID = contactToCreate.TinyID
 
+	log.Printf("Testando o log")
+
 	_, err = collection.InsertOne(ctx, clientToCreate)
 	if err != nil {
 		log.Printf("Erro ao criar cliente: %s", err.Error())
