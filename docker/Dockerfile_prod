@@ -1,29 +1,18 @@
 # Build stage
 FROM golang:1.24-alpine AS builder
-
 RUN apk add --no-cache git
-
 WORKDIR /app
-
-COPY go.mod go.sum ./
-
+COPY ./space-backend-client/go.mod ./
+COPY ./space-backend-client/go.sum ./
 RUN go mod download
-
-COPY . .
-
+COPY ../space-backend-client/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 FROM alpine:latest
-
 RUN apk --no-cache add ca-certificates tzdata
-
 WORKDIR /app
-
 COPY --from=builder /app/main .
-
 EXPOSE 8080
-
 ENV ENV=production
 ENV PORT=8080
-
-CMD ["./main"] 
+CMD ["./main"]
