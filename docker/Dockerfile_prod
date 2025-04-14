@@ -5,12 +5,18 @@ WORKDIR /app
 COPY ./space-backend-client/go.mod ./
 COPY ./space-backend-client/go.sum ./
 RUN go mod download
-COPY ../space-backend-client/ .
+COPY ./space-backend-client/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
-EXPOSE 8080
-COPY ../space-backend-client/init-container.sh /usr/local/bin/init-container.sh
+
+# Runtime stage
+FROM alpine:latest
+RUN apk add --no-cache bash
+WORKDIR /app
+COPY --from=builder /app/main .
+COPY ./space-backend-client/init-container.sh ./init-container.sh
+RUN chmod +x ./init-container.sh
 RUN touch .env
 RUN chmod u+w .env
-RUN chmod +x /usr/local/bin/init-container.sh
-CMD ["/usr/local/bin/init-container.sh"]
-
+# Definir ENV como production
+EXPOSE 8080
+CMD ["./init-container.sh"]
