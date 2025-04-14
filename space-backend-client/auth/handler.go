@@ -295,7 +295,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.RegisterClientInTinyWithID(&contactToCreate)
 	if err != nil {
-		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ERROR_TINY_API_INTEGRATION),
@@ -315,6 +314,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 	_, err = collection.InsertOne(ctx, clientToCreate)
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.CANNOT_INSERT_CLIENT_TO_MONGODB),
