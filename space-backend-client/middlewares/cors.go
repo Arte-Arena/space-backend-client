@@ -17,6 +17,7 @@ func Cors(next http.Handler) http.Handler {
 		allowedOrigins = []string{
 			"https://api.spacearena.net",
 			"https://my.spacearena.net",
+			"https://api.my.spacearena.net",
 		}
 	}
 
