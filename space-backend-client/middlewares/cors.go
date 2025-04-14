@@ -1,7 +1,9 @@
 package middlewares
 
 import (
+	"api/utils"
 	"net/http"
+	"os"
 	"slices"
 )
 
@@ -9,6 +11,13 @@ func Cors(next http.Handler) http.Handler {
 	allowedOrigins := []string{
 		"http://localhost:8000",
 		"http://localhost:3000",
+	}
+
+	if os.Getenv(utils.ENV) == utils.ENV_RELEASE {
+		allowedOrigins = []string{
+			"https://api.spacearena.net",
+			"https://my.spacearena.net",
+		}
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
