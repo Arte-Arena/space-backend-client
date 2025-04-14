@@ -16,7 +16,7 @@ EXPOSE 8080
 # ENV ENV=production
 # ENV PORT=8080
 
-COPY ./space-client-backend/init-container.sh /usr/local/bin/init-container.sh
+COPY ./init-container.sh /usr/local/bin/init-container.sh
 RUN touch .env
 RUN chmod u+w .env
 RUN chmod +x /usr/local/bin/init-container.sh
