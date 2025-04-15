@@ -195,8 +195,8 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
+	accessToken, err := r.Cookie("access_token")
+	if err != nil || accessToken.Value == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.MISSING_AUTHORIZATION_HEADER),
@@ -204,17 +204,8 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.WRONG_AUTHORIZATION_HEADER_FORMAT),
-		})
-		return
-	}
-	tokenString := authHeader[7:]
-
-	_, err := utils.ValidateAccessKey(tokenString)
-	if err != nil {
+	_, errValidate := utils.ValidateAccessKey(accessToken.Value)
+	if errValidate != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{
 			Message: utils.SendInternalError(utils.ACCESS_TOKEN_INVALID_OR_EXPIRED),
