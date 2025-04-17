@@ -76,7 +76,7 @@ type TinyAPIResponse struct {
 				Sequencia  string `json:"sequencia"`
 				Status     string `json:"status"`
 				ID         int    `json:"id,omitempty"`
-				CodigoErro int    `json:"codigo_erro,omitempty"`
+				CodigoErro string `json:"codigo_erro,omitempty"`
 				Erros      []struct {
 					Erro string `json:"erro"`
 				} `json:"erros,omitempty"`
