@@ -309,36 +309,6 @@ func getUniformsByBudgetId(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func HandlerUniforms(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		addUniformWithBudgetId(w, r)
-	case http.MethodPatch:
-		updatePlayersData(w, r)
-	case http.MethodGet:
-		getUniformsByBudgetId(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
-		})
-	}
-}
-
-func HandlerClients(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPatch:
-		addBudgetIDToClient(w, r)
-	case http.MethodGet:
-		getClientsByBudgetIDs(w, r)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
-		})
-	}
-}
-
 func addBudgetIDToClient(w http.ResponseWriter, r *http.Request) {
 	budgetRequest := schemas.ClientAddBudgetRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&budgetRequest); err != nil {
@@ -573,4 +543,62 @@ func getClientsByBudgetIDs(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(schemas.ApiResponse{
 		Data: clientResponses,
 	})
+}
+
+func putOctaChats(w http.ResponseWriter, r *http.Request) {
+	octaChatsRequest := schemas.OctaChat{}
+	if err := json.NewDecoder(r.Body).Decode(&octaChatsRequest); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: "Dados inválidos",
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(schemas.ApiResponse{
+		Message: "Chats atualizados com sucesso",
+	})
+}
+
+func HandlerUniforms(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		addUniformWithBudgetId(w, r)
+	case http.MethodPatch:
+		updatePlayersData(w, r)
+	case http.MethodGet:
+		getUniformsByBudgetId(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
+		})
+	}
+}
+
+func HandlerClients(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPatch:
+		addBudgetIDToClient(w, r)
+	case http.MethodGet:
+		getClientsByBudgetIDs(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
+		})
+	}
+}
+
+func HandlerOctaChats(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		putOctaChats(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
+		})
+	}
 }

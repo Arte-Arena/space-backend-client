@@ -10,3 +10,8 @@ type UpdatePlayersDataRequest struct {
 	BudgetID int      `json:"budget_id"`
 	Players  []Player `json:"players,omitempty"`
 }
+
+type OctaChat struct {
+	ID   string `json:"id"`
+	Chat string `json:"chat"`
+}
