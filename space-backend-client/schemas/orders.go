@@ -9,7 +9,7 @@ type Product struct {
 type OrderResult struct {
 	NumeroPedido     string    `json:"numero_pedido" bson:"numero_pedido"`
 	OrcamentoId      int       `json:"orcamento_id" bson:"orcamento_id"`
-	ValorOrcamento   float64   `json:"valor_orcamento" bson:"valor_orcamento"`
+	ValorOrcamento   string    `json:"valor_orcamento" bson:"valor_orcamento"`
 	EstagioDescricao string    `json:"estagio_descricao" bson:"estagio_descricao"`
 	DataPrevista     string    `json:"data_prevista" bson:"data_prevista"`
 	DataCriacao      string    `json:"data_criacao" bson:"data_criacao"`
