@@ -4,6 +4,7 @@ import (
 	"api/admin"
 	"api/auth"
 	"api/clients"
+	"api/extchat"
 	"api/middlewares"
 	"api/orders"
 	"api/schemas"
@@ -32,6 +33,11 @@ func setupRouter() http.Handler {
 	mux.HandleFunc("/v1/clients", middlewares.AuthMiddleware(clients.Handler))
 	mux.HandleFunc("/v1/uniforms", middlewares.AuthMiddleware(uniforms.Handler))
 	mux.HandleFunc("/v1/orders", middlewares.AuthMiddleware(orders.Handler))
+
+	// mux.HandleFunc("/v1/webhook/instagram", extchat.HandlerInstagram)
+	mux.HandleFunc("/v1/webhook/whatsapp", extchat.HandlerWhatsapp)
+	// mux.HandleFunc("/v1/webhook/tiktok", extchat.HandlerTiktok)
+	// mux.HandleFunc("/v1/webhook/messenger", extchat.HandlerMessenger)
 
 	handler := middlewares.Logging(middlewares.SecurityHeaders(middlewares.Cors(mux)))
 	return handler
