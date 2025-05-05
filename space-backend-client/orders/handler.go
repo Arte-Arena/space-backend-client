@@ -99,7 +99,8 @@ func getAllOrders(w http.ResponseWriter, r *http.Request) {
 	}
 	budgetsIds := strings.Join(budgetIDStrings, ",")
 
-	laravelURL := "http://localhost:8000/api/pedidos/consultar-multiplos?orcamento_ids=" + budgetsIds
+	spaceErpUri := os.Getenv(utils.SPACE_ERP_URI)
+	laravelURL := spaceErpUri + "/api/pedidos/consultar-multiplos?orcamento_ids=" + budgetsIds
 
 	req, err := http.NewRequest("GET", laravelURL, nil)
 	if err != nil {

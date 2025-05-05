@@ -8,9 +8,8 @@ import (
 )
 
 const (
-	ACCESS_TOKEN_EXPIRATION    = 15 * time.Minute
-	REFRESH_TOKEN_EXPIRATION   = 168 * time.Hour
-	SPACE_ERP_TOKEN_EXPIRATION = 5 * time.Minute
+	ACCESS_TOKEN_EXPIRATION  = 15 * time.Minute
+	REFRESH_TOKEN_EXPIRATION = 168 * time.Hour
 )
 
 type Claims struct {
