@@ -35,7 +35,7 @@ func getUniforms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uniformID := r.URL.Query().Get("id")
+	budgetIDParam := r.URL.Query().Get("id")
 
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
 	defer cancel()
@@ -54,17 +54,20 @@ func getUniforms(w http.ResponseWriter, r *http.Request) {
 
 	uniformsCollection := client.Database(database.GetDB()).Collection("uniforms")
 
-	if uniformID != "" {
-		objectID, err := utils.ParseObjectIDFromHex(uniformID)
+	if budgetIDParam != "" {
+		budgetID, err := utils.ParseIntOrDefault(budgetIDParam, 0)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(schemas.ApiResponse{
-				Message: "ID do uniforme inválido",
+				Message: "ID do orçamento inválido",
 			})
 			return
 		}
 
-		filter := bson.D{{Key: "_id", Value: objectID}}
+		filter := bson.D{
+			{Key: "budget_id", Value: budgetID},
+			{Key: "client_id", Value: userIdStr},
+		}
 
 		var uniform schemas.UniformFromDB
 		err = uniformsCollection.FindOne(ctx, filter).Decode(&uniform)
@@ -79,14 +82,6 @@ func getUniforms(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(schemas.ApiResponse{
 				Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
-			})
-			return
-		}
-
-		if uniform.ClientID != userIdStr {
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(schemas.ApiResponse{
-				Message: "Você não tem permissão para visualizar este uniforme",
 			})
 			return
 		}

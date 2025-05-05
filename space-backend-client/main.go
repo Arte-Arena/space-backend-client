@@ -5,6 +5,7 @@ import (
 	"api/auth"
 	"api/clients"
 	"api/middlewares"
+	"api/orders"
 	"api/schemas"
 	"api/uniforms"
 	"api/utils"
@@ -30,6 +31,7 @@ func setupRouter() http.Handler {
 
 	mux.HandleFunc("/v1/clients", middlewares.AuthMiddleware(clients.Handler))
 	mux.HandleFunc("/v1/uniforms", middlewares.AuthMiddleware(uniforms.Handler))
+	mux.HandleFunc("/v1/orders", middlewares.AuthMiddleware(orders.Handler))
 
 	handler := middlewares.Logging(middlewares.SecurityHeaders(middlewares.Cors(mux)))
 	return handler
