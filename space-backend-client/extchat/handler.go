@@ -67,6 +67,14 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Erro ao ler payload: " + err.Error()})
 		return
 	}
+
+	// Verifica se o payload está vazio
+	if len(payloadBytes) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Nenhum payload foi enviado na requisição do webhook"})
+		return
+	}
+
 	// Log do payload recebido
 	log.Printf("[Webhook] payload: %s", string(payloadBytes))
 
