@@ -6,6 +6,8 @@ import (
 	"api/utils"
 	"context"
 	"encoding/json"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -51,40 +53,46 @@ type WebhookEvent struct {
 
 // HandlerWhatsapp processa eventos do 360Dialog Cloud API e persiste mensagens no MongoDB
 func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
+	// Apenas POST
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED),
-		})
+		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: utils.SendInternalError(utils.HTTP_METHOD_NO_ALLOWED)})
 		return
 	}
 
-	var evt WebhookEvent
-	if err := json.NewDecoder(r.Body).Decode(&evt); err != nil {
+	// Lê payload bruto para debugar
+	payloadBytes, err := io.ReadAll(r.Body)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: "Requisição inválida: " + err.Error(),
-		})
+		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Erro ao ler payload: " + err.Error()})
+		return
+	}
+	log.Printf("Webhook payload recebido: %s", string(payloadBytes))
+
+	// Decodifica JSON
+	var evt WebhookEvent
+	if err := json.Unmarshal(payloadBytes, &evt); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Requisição inválida: " + err.Error()})
 		return
 	}
 
+	// Conexão MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
 	defer cancel()
-
 	mongoURI := os.Getenv(utils.ENV_MONGODB_URI)
 	clientOpts := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(clientOpts)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(schemas.ApiResponse{
-			Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB),
-		})
+		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB)})
 		return
 	}
 	defer client.Disconnect(ctx)
 
 	col := client.Database(database.GetDB()).Collection("whatsapp_events")
 
+	// Processa entries e changes
 	for _, entry := range evt.Entry {
 		for _, change := range entry.Changes {
 			if change.Field != "messages" {
@@ -103,9 +111,7 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 				}
 				if _, err := col.InsertOne(ctx, doc); err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(schemas.ApiResponse{
-						Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB),
-					})
+					json.NewEncoder(w).Encode(schemas.ApiResponse{Message: utils.SendInternalError(utils.ERROR_TO_TRY_FIND_MONGODB)})
 					return
 				}
 			}
@@ -113,7 +119,5 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(schemas.ApiResponse{
-		Message: "Eventos processados com sucesso",
-	})
+	json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Eventos processados com sucesso"})
 }
