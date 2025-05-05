@@ -78,25 +78,27 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Conexão MongoDB
+	// Contexto para operações no MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), database.MONGODB_TIMEOUT)
 	defer cancel()
+
+	// Configura cliente MongoDB
 	mongoURI := os.Getenv(utils.ENV_MONGODB_URI)
 	clientOpts := options.Client().ApplyURI(mongoURI)
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongo.Connect(clientOpts)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB)})
 		return
 	}
+	// Garante desconexão
 	defer client.Disconnect(ctx)
 
 	col := client.Database(database.GetDB()).Collection("whatsapp_events")
 
-	// Processa entries e changes
+	// Processa cada entry/change/mensagem
 	for _, entry := range evt.Entry {
 		for _, change := range entry.Changes {
-			// Apenas payload de mensagens
 			if change.Field != "messages" {
 				continue
 			}
@@ -120,7 +122,7 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Responde sucesso
+	// Retorna sucesso
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Eventos processados com sucesso"})
 }
