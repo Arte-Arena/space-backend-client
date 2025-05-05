@@ -60,27 +60,6 @@ func GenerateRefreshKey(userId string) (string, error) {
 	return refreshTokenString, nil
 }
 
-func GenerateSpaceErpKey(userId string) (string, error) {
-	spaceErpTokenClaims := Claims{
-		userId,
-		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(SPACE_ERP_TOKEN_EXPIRATION)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    os.Getenv(TOKEN_ISSUER),
-			Audience:  []string{os.Getenv(TOKEN_AUDIENCE)},
-		},
-	}
-
-	spaceErpToken := jwt.NewWithClaims(jwt.SigningMethodHS512, spaceErpTokenClaims)
-	spaceErpTokenString, err := spaceErpToken.SignedString([]byte(os.Getenv(SPACE_ERP_SECRET)))
-	if err != nil {
-		return "", err
-	}
-
-	return spaceErpTokenString, nil
-}
-
 func ValidateAccessKey(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
@@ -118,31 +97,6 @@ func ValidateRefreshKey(tokenString string) (*Claims, error) {
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(os.Getenv(REFRESH_TOKEN_SECRET)), nil
-	}, parserOptions...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !token.Valid {
-		return nil, jwt.ErrInvalidKey
-	}
-
-	return claims, nil
-}
-
-func ValidateSpaceErpKey(tokenString string) (*Claims, error) {
-	claims := &Claims{}
-
-	parserOptions := []jwt.ParserOption{
-		jwt.WithValidMethods([]string{jwt.SigningMethodHS512.Alg()}),
-		jwt.WithIssuer(os.Getenv(TOKEN_ISSUER)),
-		jwt.WithAudience(os.Getenv(TOKEN_AUDIENCE)),
-		jwt.WithExpirationRequired(),
-	}
-
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
-		return []byte(os.Getenv(SPACE_ERP_SECRET)), nil
 	}, parserOptions...)
 
 	if err != nil {
