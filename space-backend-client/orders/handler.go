@@ -111,7 +111,18 @@ func getAllOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	adminKey := os.Getenv(utils.ADMIN_KEY)
+	if adminKey == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(schemas.ApiResponse{
+			Message: utils.SendInternalError(utils.ERROR_ADMIN_KEY_NOT_FOUND),
+		})
+		return
+	}
+
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-GO-API-KEY", adminKey)
+
 	httpClient := &http.Client{}
 	resp, err := httpClient.Do(req)
 	if err != nil {
