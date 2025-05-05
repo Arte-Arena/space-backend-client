@@ -67,7 +67,8 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Erro ao ler payload: " + err.Error()})
 		return
 	}
-	log.Printf("Webhook payload recebido: %s", string(payloadBytes))
+	// Log do payload recebido
+	log.Printf("[Webhook] payload: %s", string(payloadBytes))
 
 	// Decodifica JSON
 	var evt WebhookEvent
@@ -82,7 +83,7 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	mongoURI := os.Getenv(utils.ENV_MONGODB_URI)
 	clientOpts := options.Client().ApplyURI(mongoURI)
-	client, err := mongo.Connect(clientOpts)
+	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: utils.SendInternalError(utils.CANNOT_CONNECT_TO_MONGODB)})
@@ -95,6 +96,7 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	// Processa entries e changes
 	for _, entry := range evt.Entry {
 		for _, change := range entry.Changes {
+			// Apenas payload de mensagens
 			if change.Field != "messages" {
 				continue
 			}
@@ -118,6 +120,7 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Responde sucesso
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Eventos processados com sucesso"})
 }
