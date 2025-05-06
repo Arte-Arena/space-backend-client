@@ -35,7 +35,7 @@ func setupRouter() http.Handler {
 	mux.HandleFunc("/v1/orders", middlewares.AuthMiddleware(orders.Handler))
 
 	// mux.HandleFunc("/v1/webhook/instagram", extchat.HandlerInstagram)
-	mux.HandleFunc("/v1/webhook/whatsapp", extchat.HandlerWhatsapp)
+	mux.HandleFunc("/v1/whatsapp", extchat.HandlerWhatsapp)
 	// mux.HandleFunc("/v1/webhook/tiktok", extchat.HandlerTiktok)
 	// mux.HandleFunc("/v1/webhook/messenger", extchat.HandlerMessenger)
 
