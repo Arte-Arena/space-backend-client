@@ -51,7 +51,7 @@ type WebhookEvent struct {
 	} `json:"entry"`
 }
 
-// HandlerWhatsapp processa eventos do 360Dialog Cloud API e persiste mensagens no MongoDB
+// Processa eventos do 360Dialog Cloud API e persiste mensagens no MongoDB
 func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	// Apenas POST
 	if r.Method != http.MethodPost {
@@ -65,7 +65,7 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Erro ao ler payload: " + err.Error()})
-		log.Printf("[Webhook] Erro ao ler payload: %s", err.Error())
+		log.Printf("{01} - [Webhook] Erro ao ler payload: %s", err.Error())
 		return
 	}
 
@@ -73,12 +73,12 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	if len(payloadBytes) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(schemas.ApiResponse{Message: "Nenhum payload foi enviado na requisição do webhook"})
-		log.Printf("[Webhook] payload: %s", string(payloadBytes))
+		log.Printf("{02} - [Webhook] payload: %s", string(payloadBytes))
 		return
 	}
 
 	// Log do payload recebido
-	log.Printf("[Webhook] payload: %s", string(payloadBytes))
+	log.Printf("{03} - [Webhook] payload: %s", string(payloadBytes))
 
 	// Decodifica JSON
 	var evt WebhookEvent
