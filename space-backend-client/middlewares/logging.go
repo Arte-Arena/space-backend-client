@@ -15,9 +15,9 @@ func Logging(next http.Handler) http.Handler {
 		// Lê e loga payload da requisição sem consumir r.Body permanentemente
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Printf("[Logging] erro ao ler body: %v", err)
+			log.Printf("{04} - [Logging] erro ao ler body: %v", err)
 		} else {
-			log.Printf("[Logging] payload recebido: %s", string(bodyBytes))
+			log.Printf("{05} - [Logging] payload recebido: %s", string(bodyBytes))
 		}
 		// Reposiciona r.Body para próxima leitura pelo handler
 		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
