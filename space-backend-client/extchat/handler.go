@@ -4,6 +4,7 @@ import (
 	"api/database"
 	"api/schemas"
 	"api/utils"
+	"api/ws"
 	"context"
 	"encoding/json"
 	"io"
@@ -17,7 +18,9 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// HandlerWhatsapp processa o webhook do 360Dialog e persiste todo o payload recebido
+var Hub *ws.Hub
+
+// HandlerWhatsapp processa o webhook e faz braodcast via WS
 func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	// Somente POST permitido
 	if r.Method != http.MethodPost {
@@ -41,6 +44,11 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 
 	// Processamento assíncrono para gravar no MongoDB sem bloquear a resposta
 	go func(data []byte) {
+
+		if Hub != nil {
+			Hub.Broadcast(data)
+		}
+
 		// Parse genérico do JSON para capturar todo o payload
 		var rawEvent map[string]interface{}
 		if err := json.Unmarshal(data, &rawEvent); err != nil {

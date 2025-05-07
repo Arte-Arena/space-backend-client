@@ -11,6 +11,7 @@ echo "ENV=$ENV" >> .env
 echo "ADMIN_KEY=$ADMIN_KEY" >> .env
 echo "TINY_API_TOKEN=$TINY_API_TOKEN" >> .env
 echo "SPACE_ERP_URI=$SPACE_ERP_URI" >> .env
+echo "X_API_KEY_EXTCHAT=$X_API_KEY_EXTCHAT" >> .env
 
 
 echo "[arte arena security] Configurando variáveis de ambiente..."
