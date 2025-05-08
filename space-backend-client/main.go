@@ -6,6 +6,7 @@ import (
 	"api/clients"
 	"api/extchat"
 	"api/middlewares"
+	"api/orders"
 	"api/schemas"
 	"api/uniforms"
 	"api/utils"
@@ -37,18 +38,18 @@ func setupRouter(hub *ws.Hub) http.Handler {
 
 	apiMux.HandleFunc("/v1/clients", middlewares.AuthMiddleware(clients.Handler))
 	apiMux.HandleFunc("/v1/uniforms", middlewares.AuthMiddleware(uniforms.Handler))
+	apiMux.HandleFunc("/v1/orders", middlewares.AuthMiddleware(orders.Handler))
 
 	// apiMux.HandleFunc("/v1/webhook/whatsapp", middlewares.ExtChatMiddleware(extchat.HandlerWhatsapp))
 	apiMux.HandleFunc("/v1/webhook/whatsapp", extchat.HandlerWhatsapp)
 	apiMux.HandleFunc("/v1/history/whatsapp", extchat.HandlerHistory)
+	apiMux.HandleFunc("/v1/history/whatsapp2", extchat.HandlerHistory2)
 
 	// 3) Dispatcher que escolhe qual mux usar com base no path
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/v1/ws/") {
-			// WebSocket: bypass de middlewares
 			wsMux.ServeHTTP(w, r)
 		} else {
-			// REST: passa pelos wrappers de logging, CORS e security headers
 			handler := middlewares.Logging(
 				middlewares.SecurityHeaders(
 					middlewares.Cors(apiMux),

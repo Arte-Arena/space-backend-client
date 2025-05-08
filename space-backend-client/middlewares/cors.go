@@ -18,6 +18,9 @@ func Cors(next http.Handler) http.Handler {
 			"https://api.spacearena.net",
 			"https://my.spacearena.net",
 			"https://spacearena.net",
+			"https://www.spacearena.net",
+			"http://localhost:8000",
+			"http://localhost:3000",
 		}
 	}
 
