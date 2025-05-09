@@ -42,8 +42,9 @@ func setupRouter(hub *ws.Hub) http.Handler {
 
 	// apiMux.HandleFunc("/v1/webhook/whatsapp", middlewares.ExtChatMiddleware(extchat.HandlerWhatsapp))
 	apiMux.HandleFunc("/v1/webhook/whatsapp", extchat.HandlerWhatsapp)
-	apiMux.HandleFunc("/v1/history/whatsapp", extchat.HandlerHistory)
+	// apiMux.HandleFunc("/v1/history/whatsapp", extchat.HandlerHistory)
 	apiMux.HandleFunc("/v1/history/whatsapp2", extchat.HandlerHistory2)
+	apiMux.HandleFunc("/v1/extchat/send-message", extchat.HandlerSendMessage)
 
 	// 3) Dispatcher que escolhe qual mux usar com base no path
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
