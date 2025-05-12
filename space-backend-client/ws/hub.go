@@ -55,6 +55,8 @@ func (h *Hub) Run() {
 
 			for _, conn := range clientsCopy {
 				go func(c *websocket.Conn) {
+					log.Printf("[Hub] enviando para %s: %s", c.RemoteAddr(), string(message))
+
 					// Usar recover para evitar que um panic derrube toda a aplicação
 					defer func() {
 						if r := recover(); r != nil {
