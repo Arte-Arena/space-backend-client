@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -19,6 +20,38 @@ import (
 )
 
 var Hub *ws.Hub
+
+func FormatRawPayload(data []byte, receivedAt time.Time) ([]SimpleEvent, error) {
+	// 1) Unmarshal data em RawEvent
+	var raw RawEvent
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, err
+	}
+	// 2) Mesmo loop de HandlerHistory2, usando receivedAt
+	var out []SimpleEvent
+	for _, entry := range raw.Entry {
+		for _, change := range entry.Changes {
+			if change.Field != "messages" {
+				continue
+			}
+			for _, msg := range change.Value.Messages {
+				secs, err := strconv.ParseInt(msg.Timestamp, 10, 64)
+				if err != nil {
+					continue
+				}
+				out = append(out, SimpleEvent{
+					RawEvent: RawEventMessage{
+						From:      msg.From,
+						Message:   msg.Text.Body,
+						Timestamp: time.Unix(secs, 0).UTC(),
+					},
+					ReceivedAt: receivedAt.UTC(),
+				})
+			}
+		}
+	}
+	return out, nil
+}
 
 // HandlerWhatsapp processa o webhook e faz braodcast via WS
 func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
@@ -45,9 +78,25 @@ func HandlerWhatsapp(w http.ResponseWriter, r *http.Request) {
 	// Processamento assíncrono para gravar no MongoDB sem bloquear a resposta
 	go func(data []byte) {
 
-		if Hub != nil {
-			Hub.Broadcast(data)
+		// if Hub != nil {
+		// 	Hub.Broadcast(data)
+		// }
+
+		// 1) Formata o payload
+		now := time.Now()
+		events, err := FormatRawPayload(data, now)
+		if err != nil {
+			log.Printf("[WS-Format] erro ao formatar payload: %v", err)
+			return
 		}
+		// 2) Serializa e broadcast
+		outBytes, _ := json.Marshal(events)
+
+		// <<< aqui o log para conferir o que será enviado
+		log.Printf("[WebSocket] enviando payload transformado: %s", string(outBytes))
+
+		// 3) transmite via WS
+		Hub.Broadcast(outBytes)
 
 		// Parse genérico do JSON para capturar todo o payload
 		var rawEvent map[string]interface{}
