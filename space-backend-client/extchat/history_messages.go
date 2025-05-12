@@ -75,14 +75,14 @@ func HandlerHistory(w http.ResponseWriter, r *http.Request) {
 
 // MessageText já existia
 type MessageText struct {
-	Body string `bson:"body" json:"-"`
+	Body string `bson:"body" json:"body"`
 }
 
 // Message armazena o raw_message do Mongo, com Timestamp ainda como string
 type Message struct {
-	From      string      `bson:"from"`
-	Timestamp string      `bson:"timestamp"`
-	Text      MessageText `bson:"text"`
+	From      string      `bson:"from" json:"from"`
+	Timestamp string      `bson:"timestamp" json:"timestamp"`
+	Text      MessageText `bson:"text" json:"text"`
 }
 
 // Value e Change já existiam

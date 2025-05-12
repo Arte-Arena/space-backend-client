@@ -57,8 +57,7 @@ func (h *Hub) Run() {
 				go func(c *websocket.Conn) {
 					log.Printf("[Hub] enviando para %s: %s", c.RemoteAddr(), string(msg))
 
-          // Usar recover para evitar que um panic derrube toda a aplicação
-					defer func() {
+          defer func() {
 						if r := recover(); r != nil {
 							log.Printf("Recovered from panic in websocket write: %v", r)
 							h.unregister <- c
