@@ -138,10 +138,11 @@ func HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 							"value": bson.M{
 								"messages": []interface{}{
 									bson.M{
-										"from":      reqBody.To,
+										"from": "551123371548",
+										"to": reqBody.To,
 										"timestamp": fmt.Sprint(now.Unix()),
-										"text":      bson.M{"body": reqBody.Body},
-									},
+										"text": bson.M{"body": reqBody.Body},
+									  },
 								},
 							},
 						},
