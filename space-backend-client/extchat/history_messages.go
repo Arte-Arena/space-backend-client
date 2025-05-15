@@ -81,6 +81,7 @@ type MessageText struct {
 // Message armazena o raw_message do Mongo, com Timestamp ainda como string
 type Message struct {
 	From      string      `bson:"from" json:"from"`
+	To        string      `bson:"to" json:"to"`
 	Timestamp string      `bson:"timestamp" json:"timestamp"`
 	Text      MessageText `bson:"text" json:"text"`
 }
@@ -106,6 +107,7 @@ type RawEvent struct {
 // RawEventMessage é o que vai para o JSON de saída em raw_event
 type RawEventMessage struct {
 	From      string    `json:"from"`
+	To        string    `json:"to"`
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
 }
@@ -184,6 +186,7 @@ func HandlerHistory2(w http.ResponseWriter, r *http.Request) {
 					result = append(result, SimpleEvent{
 						RawEvent: RawEventMessage{
 							From:      msg.From,
+							To:        msg.To,
 							Message:   msg.Text.Body,
 							Timestamp: ts,
 						},
